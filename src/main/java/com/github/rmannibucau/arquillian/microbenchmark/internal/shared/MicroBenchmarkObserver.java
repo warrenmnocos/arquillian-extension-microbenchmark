@@ -28,18 +28,8 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 public class MicroBenchmarkObserver extends LocalTestExecuter {
@@ -70,23 +60,26 @@ public class MicroBenchmarkObserver extends LocalTestExecuter {
             return;
         }
 
-        final TestResult result = new TestResult();
+        TestResult result;
         try {
             final Object[] parameters = findParameters(executor, serviceLoader.get().all(TestEnricher.class));
 
             warmup(executor, run, parameters);
             bench(executor, parameters, run);
 
+            result = TestResult.passed();
             result.setStatus(TestResult.Status.PASSED);
         } catch (final Throwable e) {
+            result = TestResult.failed(e);
             result.setStatus(TestResult.Status.FAILED);
             result.setThrowable(e);
 
             reportException(e);
-        } finally {
-            result.setEnd(System.currentTimeMillis());
         }
+
+        result.setEnd(System.currentTimeMillis());
         testResult.set(result);
+
     }
 
     // warmup is mono threaded
